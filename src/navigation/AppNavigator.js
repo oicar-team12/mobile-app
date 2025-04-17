@@ -1,13 +1,22 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Text, View, StyleSheet, Dimensions } from "react-native";
+import {
+  Text,
+  View,
+  StyleSheet,
+  Dimensions,
+  ActivityIndicator,
+} from "react-native";
 
 // Import screens
 import LoginScreen from "../screens/LoginScreen";
+import RegisterScreen from "../screens/RegisterScreen";
 import ScheduleScreen from "../screens/ScheduleScreen";
 import AvailabilityScreen from "../screens/AvailabilityScreen";
+import ProfileScreen from "../screens/ProfileScreen";
+import { useAuth } from "../context/AuthContext";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -96,7 +105,7 @@ const MainTabNavigator = () => {
       />
       <Tab.Screen
         name="Profile"
-        component={ProfilePlaceholder}
+        component={ProfileScreen}
         options={{
           tabBarLabel: "Profile",
         }}
@@ -105,30 +114,45 @@ const MainTabNavigator = () => {
   );
 };
 
-// Placeholder for Profile screen
-const ProfilePlaceholder = () => (
-  <View
-    style={{
-      flex: 1,
-      justifyContent: "center",
-      alignItems: "center",
-      backgroundColor: "#1E232C",
-    }}
-  >
-    <Text style={{ color: "white", fontSize: 18 }}>
-      Profile Screen (Coming Soon)
-    </Text>
+// Auth Navigator
+const AuthNavigator = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="Login" component={LoginScreen} />
+    <Stack.Screen name="Register" component={RegisterScreen} />
+  </Stack.Navigator>
+);
+
+// Loading Screen
+const LoadingScreen = () => (
+  <View style={styles.loadingContainer}>
+    <ActivityIndicator size="large" color="#4B7BEC" />
   </View>
 );
 
-// Root Navigator
+// Root Navigator with Authentication Flow
+const RootNavigator = () => {
+  const { isAuthenticated, user, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {isAuthenticated() ? (
+        <Stack.Screen name="MainTabs" component={MainTabNavigator} />
+      ) : (
+        <Stack.Screen name="Auth" component={AuthNavigator} />
+      )}
+    </Stack.Navigator>
+  );
+};
+
+// App Container with AuthProvider
 const AppNavigator = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="MainTabs" component={MainTabNavigator} />
-      </Stack.Navigator>
+      <RootNavigator />
     </NavigationContainer>
   );
 };
@@ -190,6 +214,12 @@ const styles = StyleSheet.create({
   activeTabLabel: {
     color: "#4B7BEC",
     fontWeight: "600",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#1E232C",
   },
 });
 

@@ -9,41 +9,62 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  ScrollView,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useAuth } from "../context/AuthContext";
 
-const LoginScreen = ({ navigation }) => {
+const RegisterScreen = ({ navigation }) => {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [emailError, setEmailError] = useState("");
-  const { login, loading, error } = useAuth();
+  const [passwordError, setPasswordError] = useState("");
+
+  const { register, loading } = useAuth();
 
   const validateEmail = (text) => {
     const emailRegex = /\S+@\S+\.\S+/;
     if (!emailRegex.test(text)) {
       setEmailError("Enter a valid email address");
+      return false;
     } else {
       setEmailError("");
+      return true;
     }
   };
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert("Error", "Please enter both email and password");
+  const validatePassword = () => {
+    if (password.length < 6) {
+      setPasswordError("Password must be at least 6 characters");
+      return false;
+    } else if (password !== confirmPassword) {
+      setPasswordError("Passwords do not match");
+      return false;
+    } else {
+      setPasswordError("");
+      return true;
+    }
+  };
+
+  const handleRegister = async () => {
+    // Validate all fields
+    if (!name || !email || !password || !confirmPassword) {
+      Alert.alert("Error", "Please fill in all fields");
+      return;
+    }
+
+    if (!validateEmail(email) || !validatePassword()) {
       return;
     }
 
     try {
-      await login(email, password);
+      await register(email, password, name);
       navigation.replace("MainTabs");
     } catch (err) {
-      Alert.alert("Login Failed", err.message);
+      Alert.alert("Registration Failed", err.message);
     }
-  };
-
-  const handleRegister = () => {
-    navigation.navigate("Register");
   };
 
   return (
@@ -56,8 +77,21 @@ const LoginScreen = ({ navigation }) => {
         <Text style={styles.appName}>ShiftSync</Text>
       </View>
 
-      <View style={styles.formContainer}>
-        <Text style={styles.titleText}>Login</Text>
+      <ScrollView
+        style={styles.formContainer}
+        contentContainerStyle={styles.formContent}
+      >
+        <Text style={styles.titleText}>Create Account</Text>
+
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Full Name</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter your full name"
+            value={name}
+            onChangeText={setName}
+          />
+        </View>
 
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Email</Text>
@@ -81,37 +115,59 @@ const LoginScreen = ({ navigation }) => {
           <Text style={styles.label}>Password</Text>
           <TextInput
             style={styles.input}
-            placeholder="Enter your password"
+            placeholder="Create a password"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
           />
         </View>
 
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Confirm Password</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Confirm your password"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
+          />
+          {passwordError ? (
+            <Text style={styles.errorText}>{passwordError}</Text>
+          ) : null}
+        </View>
+
         <TouchableOpacity
           style={[
             styles.button,
-            !email || !password || emailError !== ""
+            !name ||
+            !email ||
+            !password ||
+            !confirmPassword ||
+            emailError !== "" ||
+            passwordError !== ""
               ? styles.buttonDisabled
               : null,
           ]}
-          onPress={handleLogin}
+          onPress={handleRegister}
           disabled={loading}
         >
           {loading ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text style={styles.buttonText}>Login</Text>
+            <Text style={styles.buttonText}>Register</Text>
           )}
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.registerLink} onPress={handleRegister}>
-          <Text style={styles.registerText}>
-            Don't have an account?{" "}
-            <Text style={styles.registerHighlight}>Register</Text>
+        <TouchableOpacity
+          style={styles.loginLink}
+          onPress={() => navigation.navigate("Login")}
+        >
+          <Text style={styles.loginText}>
+            Already have an account?{" "}
+            <Text style={styles.loginHighlight}>Login</Text>
           </Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 };
@@ -123,8 +179,8 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: "center",
-    marginTop: 60,
-    marginBottom: 20,
+    marginTop: 40,
+    marginBottom: 10,
   },
   appName: {
     fontSize: 28,
@@ -136,8 +192,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#2A3242",
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
+  },
+  formContent: {
     padding: 24,
     paddingTop: 30,
+    paddingBottom: 40,
   },
   titleText: {
     fontSize: 24,
@@ -180,18 +239,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-  registerLink: {
+  loginLink: {
     marginTop: 20,
     alignItems: "center",
   },
-  registerText: {
+  loginText: {
     color: "#E8E8E8",
     fontSize: 14,
   },
-  registerHighlight: {
+  loginHighlight: {
     color: "#4B7BEC",
     fontWeight: "bold",
   },
 });
 
-export default LoginScreen;
+export default RegisterScreen;
