@@ -34,11 +34,17 @@ const LoginScreen = ({ navigation }) => {
       return;
     }
 
+    if (emailError) {
+      Alert.alert("Error", "Please enter a valid email address");
+      return;
+    }
+
     try {
       await login(email, password);
-      navigation.replace("MainTabs");
+      // This is more reliable than trying to navigate directly to MainTabs
+      // The RootNavigator in AppNavigator.js will automatically show MainTabs based on auth state
     } catch (err) {
-      Alert.alert("Login Failed", err.message);
+      Alert.alert("Login Failed", err.message || "Authentication failed");
     }
   };
 

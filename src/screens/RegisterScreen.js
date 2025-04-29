@@ -15,7 +15,8 @@ import { StatusBar } from "expo-status-bar";
 import { useAuth } from "../context/AuthContext";
 
 const RegisterScreen = ({ navigation }) => {
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -50,7 +51,7 @@ const RegisterScreen = ({ navigation }) => {
 
   const handleRegister = async () => {
     // Validate all fields
-    if (!name || !email || !password || !confirmPassword) {
+    if (!firstName || !lastName || !email || !password || !confirmPassword) {
       Alert.alert("Error", "Please fill in all fields");
       return;
     }
@@ -60,10 +61,15 @@ const RegisterScreen = ({ navigation }) => {
     }
 
     try {
-      await register(email, password, name);
-      navigation.replace("MainTabs");
+      await register(firstName, lastName, email, password);
+      // Registration and login successful - no need for navigation,
+      // the root navigator will automatically handle the navigation
+      Alert.alert("Success", "Registration successful!");
     } catch (err) {
-      Alert.alert("Registration Failed", err.message);
+      Alert.alert(
+        "Registration Failed",
+        err.message || "An error occurred during registration"
+      );
     }
   };
 
@@ -84,12 +90,22 @@ const RegisterScreen = ({ navigation }) => {
         <Text style={styles.titleText}>Create Account</Text>
 
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Full Name</Text>
+          <Text style={styles.label}>First Name</Text>
           <TextInput
             style={styles.input}
-            placeholder="Enter your full name"
-            value={name}
-            onChangeText={setName}
+            placeholder="Enter your first name"
+            value={firstName}
+            onChangeText={setFirstName}
+          />
+        </View>
+
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Last Name</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter your last name"
+            value={lastName}
+            onChangeText={setLastName}
           />
         </View>
 
@@ -139,7 +155,8 @@ const RegisterScreen = ({ navigation }) => {
         <TouchableOpacity
           style={[
             styles.button,
-            !name ||
+            !firstName ||
+            !lastName ||
             !email ||
             !password ||
             !confirmPassword ||

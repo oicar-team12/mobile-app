@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import mockApi from "../services/mockApi";
+import AuthService from "../services/AuthService";
 
 // Create Auth Context
 const AuthContext = createContext(null);
@@ -24,17 +24,19 @@ export const AuthProvider = ({ children }) => {
         const storedToken = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
 
         if (storedUser && storedToken) {
-          const userData = JSON.parse(storedUser);
+          setUser(JSON.parse(storedUser));
+          setToken(storedToken);
 
-          // Validate token with the mock API
-          const isValid = await mockApi.validateToken(userData.id, storedToken);
-
-          if (isValid) {
-            setUser(userData);
-            setToken(storedToken);
-          } else {
-            // Clear invalid data
+          // Try to refresh the token
+          try {
+            const response = await AuthService.refresh();
+            setToken(response.accessToken);
+            await AsyncStorage.setItem(AUTH_TOKEN_KEY, response.accessToken);
+          } catch (e) {
+            // Token is invalid, clear auth data
             await AsyncStorage.multiRemove([AUTH_USER_KEY, AUTH_TOKEN_KEY]);
+            setUser(null);
+            setToken(null);
           }
         }
       } catch (e) {
@@ -52,18 +54,26 @@ export const AuthProvider = ({ children }) => {
     setError("");
     try {
       setLoading(true);
-      const response = await mockApi.login(email, password);
+      const response = await AuthService.login(email, password);
+
+      // Create user data object with email and any data from response
+      const userData = {
+        email: email,
+        firstName: response.firstName || "",
+        lastName: response.lastName || "",
+        // Add more user properties from the response as needed
+      };
 
       // Store user and token
-      await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(response.user));
-      await AsyncStorage.setItem(AUTH_TOKEN_KEY, response.token);
+      await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(userData));
+      await AsyncStorage.setItem(AUTH_TOKEN_KEY, response.accessToken);
 
-      setUser(response.user);
-      setToken(response.token);
+      setUser(userData);
+      setToken(response.accessToken);
 
       return response;
     } catch (e) {
-      setError(e.message);
+      setError(e.message || "Login failed");
       throw e;
     } finally {
       setLoading(false);
@@ -71,22 +81,33 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Register function
-  const register = async (email, password, name) => {
+  const register = async (firstName, lastName, email, password) => {
     setError("");
     try {
       setLoading(true);
-      const response = await mockApi.register(email, password, name);
+      await AuthService.register(firstName, lastName, email, password);
+
+      // After registration, log the user in and provide firstName and lastName explicitly
+      const loginResponse = await AuthService.login(email, password);
+
+      // Store user data with firstName and lastName
+      const userData = {
+        email: email,
+        firstName: firstName,
+        lastName: lastName,
+        // Add additional fields from loginResponse if needed
+      };
 
       // Store user and token
-      await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(response.user));
-      await AsyncStorage.setItem(AUTH_TOKEN_KEY, response.token);
+      await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(userData));
+      await AsyncStorage.setItem(AUTH_TOKEN_KEY, loginResponse.accessToken);
 
-      setUser(response.user);
-      setToken(response.token);
+      setUser(userData);
+      setToken(loginResponse.accessToken);
 
-      return response;
+      return loginResponse;
     } catch (e) {
-      setError(e.message);
+      setError(e.message || "Registration failed");
       throw e;
     } finally {
       setLoading(false);
@@ -98,8 +119,8 @@ export const AuthProvider = ({ children }) => {
     setError("");
     try {
       setLoading(true);
-      if (user) {
-        await mockApi.logout(user.id);
+      if (token) {
+        await AuthService.logout(token);
       }
 
       // Clear stored auth data
@@ -108,7 +129,7 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       setToken(null);
     } catch (e) {
-      setError(e.message);
+      setError(e.message || "Logout failed");
       throw e;
     } finally {
       setLoading(false);

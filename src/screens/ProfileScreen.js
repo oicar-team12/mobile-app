@@ -15,12 +15,9 @@ const ProfileScreen = ({ navigation }) => {
   const handleLogout = async () => {
     try {
       await logout();
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "Login" }],
-      });
+      // No need to navigate since the AppNavigator will handle this automatically
     } catch (error) {
-      Alert.alert("Logout Failed", error.message);
+      Alert.alert("Logout Failed", error.message || "An error occurred");
     }
   };
 
@@ -51,6 +48,14 @@ const ProfileScreen = ({ navigation }) => {
     );
   }
 
+  // Safely get the first letter of email if available
+  const getInitial = () => {
+    if (user.email && user.email.length > 0) {
+      return user.email.charAt(0).toUpperCase();
+    }
+    return "U"; // Default initial
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -59,16 +64,22 @@ const ProfileScreen = ({ navigation }) => {
 
       <View style={styles.profileContainer}>
         <View style={styles.avatarPlaceholder}>
-          <Text style={styles.avatarText}>{user.name.charAt(0)}</Text>
+          <Text style={styles.avatarText}>{getInitial()}</Text>
         </View>
 
-        <Text style={styles.userName}>{user.name}</Text>
-        <Text style={styles.userEmail}>{user.email}</Text>
+        <Text style={styles.userName}>
+          {user.firstName || user.lastName
+            ? `${user.firstName || ""} ${user.lastName || ""}`
+            : "User"}
+        </Text>
+        <Text style={styles.userEmail}>
+          {user.email || "No email provided"}
+        </Text>
 
         <View style={styles.infoContainer}>
           <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>Account ID</Text>
-            <Text style={styles.infoValue}>{user.id}</Text>
+            <Text style={styles.infoLabel}>Account Type</Text>
+            <Text style={styles.infoValue}>Employee</Text>
           </View>
         </View>
 
