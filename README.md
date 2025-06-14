@@ -23,6 +23,17 @@ To get a local copy up and running for development and testing purposes, follow 
 *   Expo CLI: `npm install -g expo-cli`
 *   An Expo Go account and the app installed on your mobile device (for testing on a physical device) or an Android/iOS emulator.
 
+### How to run tests
+
+1.  **Navigate to the mobile app directory:**
+    ```sh
+    cd mobile/mobile
+    ```
+2.  **Run tests:**
+    ```sh
+    npm test
+    ```
+
 ### Installation
 
 1.  **Clone the repo:**
