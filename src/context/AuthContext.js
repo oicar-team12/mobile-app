@@ -20,24 +20,37 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const loadStoredUser = async () => {
       try {
+        console.log('[AuthContext] Loading stored authentication data');
         const storedUser = await AsyncStorage.getItem(AUTH_USER_KEY);
         const storedToken = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+
+        console.log('[AuthContext] Stored auth data:', { 
+          hasUser: !!storedUser, 
+          hasToken: !!storedToken,
+          tokenFirstChars: storedToken ? storedToken.substring(0, 10) + '...' : 'none'
+        });
 
         if (storedUser && storedToken) {
           setUser(JSON.parse(storedUser));
           setToken(storedToken);
+          console.log('[AuthContext] Auth data loaded into state');
 
           // Try to refresh the token
           try {
+            console.log('[AuthContext] Attempting to refresh token on startup');
             const response = await AuthService.refresh();
+            console.log('[AuthContext] Token refresh successful');
             setToken(response.accessToken);
             await AsyncStorage.setItem(AUTH_TOKEN_KEY, response.accessToken);
           } catch (e) {
+            console.error('[AuthContext] Token refresh failed:', e.message);
             // Token is invalid, clear auth data
             await AsyncStorage.multiRemove([AUTH_USER_KEY, AUTH_TOKEN_KEY]);
             setUser(null);
             setToken(null);
           }
+        } else {
+          console.log('[AuthContext] No stored auth data found, user needs to log in');
         }
       } catch (e) {
         console.error("Failed to load authentication data", e);
@@ -120,17 +133,28 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       if (token) {
-        await AuthService.logout(token);
+        // We're going to attempt to logout on the server, but continue with local logout even if it fails
+        try {
+          await AuthService.logout();
+        } catch (apiError) {
+          console.log("Server logout failed, continuing with local logout", apiError);
+        }
       }
 
-      // Clear stored auth data
+      // Clear stored auth data regardless of server response
       await AsyncStorage.multiRemove([AUTH_USER_KEY, AUTH_TOKEN_KEY]);
 
+      // Reset local state
       setUser(null);
       setToken(null);
+      return { success: true };
     } catch (e) {
-      setError(e.message || "Logout failed");
-      throw e;
+      console.error("Logout error:", e);
+      // Still clear local state even if there's an error
+      setUser(null);
+      setToken(null);
+      setError("Could not log out from server, but you've been logged out locally");
+      return { success: true, localOnly: true };
     } finally {
       setLoading(false);
     }

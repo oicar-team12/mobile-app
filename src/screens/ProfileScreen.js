@@ -1,195 +1,352 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   StyleSheet,
   Text,
   View,
   TouchableOpacity,
-  Alert,
+  Modal,
   ActivityIndicator,
+  ScrollView,
+  Animated,
+  Alert,
+  Dimensions
 } from "react-native";
 import { useAuth } from "../context/AuthContext";
+import { LinearGradient } from 'expo-linear-gradient';
+import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
+
+const { width, height } = Dimensions.get('window');
 
 const ProfileScreen = ({ navigation }) => {
-  const { user, logout, loading } = useAuth();
+  const { user, logout, loading: authLoading } = useAuth();
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 5,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [fadeAnim, scaleAnim, slideAnim]);
 
   const handleLogout = async () => {
     try {
+      setModalVisible(false);
       await logout();
-      // No need to navigate since the AppNavigator will handle this automatically
     } catch (error) {
-      Alert.alert("Logout Failed", error.message || "An error occurred");
+      setModalVisible(false);
+      console.error("Logout failed:", error.message || "An error occurred");
+      Alert.alert("Logout Failed", error.message || "An unexpected error occurred during logout.");
     }
   };
 
-  const confirmLogout = () => {
-    Alert.alert(
-      "Confirm Logout",
-      "Are you sure you want to log out?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Logout",
-          onPress: handleLogout,
-          style: "destructive",
-        },
-      ],
-      { cancelable: true }
+  if (authLoading && !user) {
+    return (
+      <LinearGradient colors={['#1F2937', '#111827']} style={styles.containerLoading}> 
+        <View style={styles.centeredContent}>
+            <ActivityIndicator size="large" color="#6C5DD3" />
+            <Text style={styles.loadingText}>Loading Profile...</Text>
+        </View>
+      </LinearGradient>
     );
-  };
-
+  }
+  
   if (!user) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>User not found</Text>
-      </View>
+      <LinearGradient colors={['#1F2937', '#111827']} style={styles.containerLoading}>
+        <View style={styles.centeredContent}>
+            <Text style={styles.errorText}>User not found or not logged in.</Text>
+        </View>
+      </LinearGradient>
     );
   }
 
-  // Safely get the first letter of email if available
-  const getInitial = () => {
-    if (user.email && user.email.length > 0) {
-      return user.email.charAt(0).toUpperCase();
+  const firstName = user.firstName || '';
+  const lastName = user.lastName || '';
+  const email = user.email || 'No email provided';
+
+  const getInitials = () => {
+    let initialsStr = "";
+    if (firstName && firstName.length > 0) {
+      initialsStr += firstName[0];
     }
-    return "U"; // Default initial
+    if (lastName && lastName.length > 0) {
+      initialsStr += lastName[0];
+    }
+    if (!initialsStr && email && email.length > 0) {
+        initialsStr = email[0];
+    }
+    return initialsStr.toUpperCase() || 'U';
   };
+  const initials = getInitials();
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Profile</Text>
-      </View>
-
-      <View style={styles.profileContainer}>
-        <View style={styles.avatarPlaceholder}>
-          <Text style={styles.avatarText}>{getInitial()}</Text>
-        </View>
-
-        <Text style={styles.userName}>
-          {user.firstName || user.lastName
-            ? `${user.firstName || ""} ${user.lastName || ""}`
-            : "User"}
-        </Text>
-        <Text style={styles.userEmail}>
-          {user.email || "No email provided"}
-        </Text>
-
-        <View style={styles.infoContainer}>
-          <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>Account Type</Text>
-            <Text style={styles.infoValue}>Employee</Text>
+    <LinearGradient colors={['#1F2937', '#111827']} style={styles.container}>
+      <StatusBar style="light" />
+      <ScrollView 
+        contentContainerStyle={styles.scrollViewContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <Animated.View style={[styles.header, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
+          <View style={styles.avatarContainer}>
+            <Text style={styles.avatarText}>{initials}</Text>
           </View>
-        </View>
+          <Text style={styles.nameText}>{firstName} {lastName}</Text>
+          <Text style={styles.emailText}>{email}</Text>
+        </Animated.View>
 
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={confirmLogout}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <Text style={styles.logoutButtonText}>Logout</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-    </View>
+        <Animated.View style={[styles.menuSection, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+          <ProfileMenuItem icon="person-circle-outline" text="Account Details" onPress={() => Alert.alert("Coming Soon!", "Edit profile functionality will be added soon.")} />
+          <ProfileMenuItem icon="settings-outline" text="App Settings" onPress={() => Alert.alert("Coming Soon!", "App settings will be available in a future update.")} />
+          <ProfileMenuItem icon="help-circle-outline" text="Help & Support" onPress={() => Alert.alert("Support", "Contact support@shiftsync.app for assistance.")} />
+        </Animated.View>
+
+        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }], width: '100%', alignItems: 'center' }}>
+          <TouchableOpacity 
+            style={styles.logoutButton}
+            onPress={() => setModalVisible(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="log-out-outline" size={24} color="#FFFFFF" style={{marginRight: 10}} />
+            <Text style={styles.logoutButtonText}>Sign Out</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      </ScrollView>
+
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Animated.View style={[styles.modalView, {transform: [{scale: scaleAnim}]}]}>
+            <Ionicons name="alert-circle-outline" size={50} color="#FBBF24" style={{ marginBottom: 15 }} />
+            <Text style={styles.modalTitle}>Confirm Sign Out</Text>
+            <Text style={styles.modalMessage}>Are you sure you want to sign out from ShiftSync?</Text>
+            <View style={styles.modalButtonContainer}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={[styles.modalButtonText, styles.cancelButtonText]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton]}
+                onPress={handleLogout}
+                disabled={authLoading}
+              >
+                {authLoading ? <ActivityIndicator color="#FFF" size="small"/> : <Text style={styles.modalButtonText}>Sign Out</Text>}
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
+    </LinearGradient>
   );
 };
 
+const ProfileMenuItem = ({ icon, text, onPress }) => (
+  <TouchableOpacity style={styles.menuItem} onPress={onPress} activeOpacity={0.6}>
+    <Ionicons name={icon} size={24} color="#A5B4FC" style={styles.menuItemIcon} />
+    <Text style={styles.menuItemText}>{text}</Text>
+    <Ionicons name="chevron-forward-outline" size={22} color="#6B7280" />
+  </TouchableOpacity>
+);
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#1E232C",
+  container: { 
+    flex: 1 
+  },
+  containerLoading: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  centeredContent: { 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  loadingText: { 
+    color: '#9CA3AF',
+    marginTop: 10,
+    fontSize: 16
+  },
+  errorText: { 
+    color: '#EF4444',
+    fontSize: 18,
+    textAlign: 'center',
+    paddingHorizontal: 20
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingBottom: 40,
+    paddingTop: height * 0.05, 
   },
   header: {
-    paddingTop: 50,
-    paddingBottom: 16,
-    paddingHorizontal: 20,
-    backgroundColor: "#1E232C",
+    alignItems: 'center',
+    marginBottom: 30,
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "white",
-  },
-  profileContainer: {
-    flex: 1,
-    backgroundColor: "#2A3242",
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    padding: 24,
-    alignItems: "center",
-    paddingTop: 40,
-  },
-  avatarPlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "#4B7BEC",
-    justifyContent: "center",
-    alignItems: "center",
+  avatarContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#6C5DD3',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 20,
+    shadowColor: '#6C5DD3',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 10,
   },
   avatarText: {
-    fontSize: 40,
-    fontWeight: "bold",
-    color: "white",
+    fontSize: 48,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
   },
-  userName: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "white",
-    marginBottom: 8,
+  nameText: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 6,
   },
-  userEmail: {
+  emailText: {
     fontSize: 16,
-    color: "#E8E8E8",
+    color: '#9CA3AF',
+  },
+  menuSection: {
+    width: '100%',
     marginBottom: 30,
   },
-  infoContainer: {
-    width: "100%",
-    backgroundColor: "#3A4357",
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    paddingVertical: 18,
+    paddingHorizontal: 15,
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 30,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  infoItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 12,
+  menuItemIcon: {
+    marginRight: 15,
   },
-  infoLabel: {
-    fontSize: 16,
-    color: "#E8E8E8",
-  },
-  infoValue: {
-    fontSize: 16,
-    color: "white",
-    fontWeight: "500",
+  menuItemText: {
+    flex: 1,
+    fontSize: 17,
+    color: '#E5E7EB',
+    fontWeight: '500',
   },
   logoutButton: {
-    backgroundColor: "#FF5C5C",
-    borderRadius: 8,
-    height: 56,
-    width: "100%",
-    justifyContent: "center",
-    alignItems: "center",
+    flexDirection: 'row',
+    backgroundColor: '#EF4444',
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 20,
+    width: '90%',
+    alignSelf: 'center',
+    shadowColor: '#EF4444',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 5,
   },
   logoutButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  errorText: {
-    color: "#FF6961",
+    color: '#FFFFFF',
     fontSize: 18,
-    textAlign: "center",
-    marginTop: 20,
+    fontWeight: '600',
   },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  },
+  modalView: {
+    width: width * 0.85,
+    backgroundColor: '#1F2937',
+    borderRadius: 20,
+    padding: 25,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+    elevation: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 10,
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: '#D1D5DB',
+    textAlign: 'center',
+    marginBottom: 25,
+    lineHeight: 22,
+  },
+  modalButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+  },
+  modalButton: {
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    minWidth: width * 0.3,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cancelButton: {
+    backgroundColor: '#4B5563',
+  },
+  cancelButtonText: {
+    color: '#FFFFFF',
+  },
+  confirmButton: {
+    backgroundColor: '#EF4444',
+  },
+  modalButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  }
 });
 
 export default ProfileScreen;

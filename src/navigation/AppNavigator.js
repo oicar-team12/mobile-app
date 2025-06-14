@@ -1,47 +1,58 @@
-import React, { useEffect, useState } from "react";
-import { NavigationContainer } from "@react-navigation/native";
-import { createStackNavigator } from "@react-navigation/stack";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import React, { useEffect } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import {
-  Text,
   View,
   StyleSheet,
-  Dimensions,
   ActivityIndicator,
-} from "react-native";
+  Animated,
+  TouchableOpacity,
+  Dimensions,
+  Easing,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons'; // Using Expo's vector icons
 
 // Import screens
-import LoginScreen from "../screens/LoginScreen";
-import RegisterScreen from "../screens/RegisterScreen";
-import ScheduleScreen from "../screens/ScheduleScreen";
-import AvailabilityScreen from "../screens/AvailabilityScreen";
-import ProfileScreen from "../screens/ProfileScreen";
-import { useAuth } from "../context/AuthContext";
+import LoginScreen from '../screens/LoginScreen';
+import RegisterScreen from '../screens/RegisterScreen';
+import ScheduleScreenNew from '../screens/ScheduleScreenNew';
+import ShiftScreen from '../screens/ShiftScreen';
+import ProfileScreen from '../screens/ProfileScreen';
+import { useAuth } from '../context/AuthContext';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
-const { width } = Dimensions.get("window");
+const { width } = Dimensions.get('window');
 
-// Custom Tab Bar Icons
-const TabIcons = {
-  Schedule: "📆",
-  Availability: "⏰",
-  Profile: "👤",
-};
+// Custom Animated Tab Bar
+const AnimatedTabBar = ({ state, descriptors, navigation }) => {
+  const iconSize = 26;
+  const activeColor = '#6C5DD3'; // A vibrant purple
+  const inactiveColor = '#8E8E93'; // Muted gray
+  const backgroundColor = '#1F2937'; // Dark cool gray
 
-// Floating Tab Bar
-function FloatingTabBar({ state, descriptors, navigation }) {
   return (
-    <View style={styles.tabBarContainer}>
+    <View style={styles.tabBarWrapper}>
       <View style={styles.tabBar}>
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
-          const label = options.tabBarLabel || route.name;
+          const label = options.tabBarLabel || options.title || route.name;
           const isFocused = state.index === index;
+          const animatedValue = new Animated.Value(isFocused ? 1 : 0);
+
+          useEffect(() => {
+            Animated.timing(animatedValue, {
+              toValue: isFocused ? 1 : 0,
+              duration: 250,
+              easing: Easing.out(Easing.ease),
+              useNativeDriver: false, // color and transform animations might need this
+            }).start();
+          }, [isFocused]);
 
           const onPress = () => {
             const event = navigation.emit({
-              type: "tabPress",
+              type: 'tabPress',
               target: route.key,
               canPreventDefault: true,
             });
@@ -51,72 +62,89 @@ function FloatingTabBar({ state, descriptors, navigation }) {
             }
           };
 
+          const onLongPress = () => {
+            navigation.emit({
+              type: 'tabLongPress',
+              target: route.key,
+            });
+          };
+
+          const iconName = (routeName) => {
+            switch (routeName) {
+              case 'Schedule': return isFocused ? 'calendar' : 'calendar-outline';
+              case 'Profile': return isFocused ? 'person-circle' : 'person-circle-outline';
+              default: return 'ellipse-outline';
+            }
+          };
+
+          const iconColorInterpolation = animatedValue.interpolate({
+            inputRange: [0, 1],
+            outputRange: [inactiveColor, activeColor],
+          });
+
+          const textOpacityInterpolation = animatedValue.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0, 1],
+          });
+          
+          const scaleInterpolation = animatedValue.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0.9, 1.1],
+          });
+
           return (
-            <View key={route.key} style={styles.tabItem}>
-              <View style={styles.tabButtonWrapper} onTouchEnd={onPress}>
-                <View
-                  style={[
-                    styles.tabButton,
-                    isFocused ? styles.activeTabButton : null,
-                  ]}
-                >
-                  <Text style={styles.tabIcon}>{TabIcons[route.name]}</Text>
-                  <Text
-                    style={[
-                      styles.tabLabel,
-                      isFocused ? styles.activeTabLabel : null,
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {label === "Availability" ? "Avail" : label}
-                  </Text>
-                </View>
-              </View>
-            </View>
+            <TouchableOpacity
+              key={route.key}
+              accessibilityRole="button"
+              accessibilityState={isFocused ? { selected: true } : {}}
+              accessibilityLabel={options.tabBarAccessibilityLabel}
+              testID={options.tabBarTestID}
+              onPress={onPress}
+              onLongPress={onLongPress}
+              style={styles.tabItem}
+            >
+              <Animated.View style={[styles.iconContainer, { transform: [{ scale: scaleInterpolation }] }]}>
+                <Animated.Text style={{ color: iconColorInterpolation }}>
+                  <Ionicons name={iconName(route.name)} size={iconSize} />
+                </Animated.Text>
+              </Animated.View>
+              <Animated.Text style={[
+                styles.tabLabel,
+                { color: iconColorInterpolation, opacity: textOpacityInterpolation }
+              ]}>
+                {label}
+              </Animated.Text>
+            </TouchableOpacity>
           );
         })}
       </View>
     </View>
   );
-}
+};
 
 // Bottom Tab Navigator
 const MainTabNavigator = () => {
   return (
     <Tab.Navigator
-      tabBar={(props) => <FloatingTabBar {...props} />}
+      tabBar={(props) => <AnimatedTabBar {...props} />}
       screenOptions={{
         headerShown: false,
       }}
     >
-      <Tab.Screen
-        name="Schedule"
-        component={ScheduleScreen}
-        options={{
-          tabBarLabel: "Schedule",
-        }}
-      />
-      <Tab.Screen
-        name="Availability"
-        component={AvailabilityScreen}
-        options={{
-          tabBarLabel: "Availability",
-        }}
-      />
-      <Tab.Screen
-        name="Profile"
-        component={ProfileScreen}
-        options={{
-          tabBarLabel: "Profile",
-        }}
-      />
+      <Tab.Screen name="Schedule" component={ScheduleScreenNew} />
+      <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
 };
 
 // Auth Navigator
 const AuthNavigator = () => (
-  <Stack.Navigator screenOptions={{ headerShown: false }}>
+  <Stack.Navigator
+    screenOptions={{
+      headerShown: false,
+      cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS, // Smooth horizontal transition
+    }}
+  >
     <Stack.Screen name="Login" component={LoginScreen} />
     <Stack.Screen name="Register" component={RegisterScreen} />
   </Stack.Navigator>
@@ -125,20 +153,25 @@ const AuthNavigator = () => (
 // Loading Screen
 const LoadingScreen = () => (
   <View style={styles.loadingContainer}>
-    <ActivityIndicator size="large" color="#4B7BEC" />
+    <ActivityIndicator size="large" color="#6C5DD3" />
   </View>
 );
 
 // Root Navigator with Authentication Flow
 const RootNavigator = () => {
-  const { isAuthenticated, user, loading } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
     return <LoadingScreen />;
   }
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        cardStyleInterpolator: CardStyleInterpolators.forFadeFromBottomAndroid, // Fade transition
+      }}
+    >
       {isAuthenticated() ? (
         <Stack.Screen name="MainTabs" component={MainTabNavigator} />
       ) : (
@@ -148,7 +181,7 @@ const RootNavigator = () => {
   );
 };
 
-// App Container with AuthProvider
+// App Container
 const AppNavigator = () => {
   return (
     <NavigationContainer>
@@ -158,69 +191,55 @@ const AppNavigator = () => {
 };
 
 const styles = StyleSheet.create({
-  tabBarContainer: {
-    position: "absolute",
-    bottom: 20,
-    left: 20,
-    right: 20,
-    alignItems: "center",
+  tabBarWrapper: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 90, // Increased height for better touch area and aesthetics
+    backgroundColor: 'transparent', // Make wrapper transparent
+    justifyContent: 'flex-end',
   },
   tabBar: {
-    flexDirection: "row",
-    backgroundColor: "#2A3242",
-    borderRadius: 30,
-    height: 65,
-    width: "100%",
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    justifyContent: "space-between",
-    // Shadow for iOS
-    shadowColor: "#000",
+    flexDirection: 'row',
+    height: 70, // Actual tab bar height
+    backgroundColor: '#1F2937', // Dark cool gray
+    borderTopLeftRadius: 25, // Rounded top corners
+    borderTopRightRadius: 25,
+    paddingHorizontal: 10,
+    alignItems: 'center', // Vertically center icons and text
+    justifyContent: 'space-around', // Distribute items evenly
+    // Shadow for depth
+    shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: -5, // Shadow upwards
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    // Shadow for Android
-    elevation: 8,
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 15, // Elevation for Android
   },
   tabItem: {
     flex: 1,
-    alignItems: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
   },
-  tabButtonWrapper: {
-    width: "100%",
-    alignItems: "center",
-  },
-  tabButton: {
-    alignItems: "center",
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: 20,
-  },
-  activeTabButton: {
-    backgroundColor: "#3D4A63",
-  },
-  tabIcon: {
-    fontSize: 20,
-    marginBottom: 3,
+  iconContainer: {
+    marginBottom: 4, // Space between icon and label
   },
   tabLabel: {
-    fontSize: 10,
-    color: "#8E8E93",
-    textAlign: "center",
-  },
-  activeTabLabel: {
-    color: "#4B7BEC",
-    fontWeight: "600",
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#1E232C",
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#121212', // Very dark background for loading
   },
 });
 
 export default AppNavigator;
+
