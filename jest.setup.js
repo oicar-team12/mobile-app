@@ -1,5 +1,5 @@
 // Attempt to initialize React Native's core for the BatchedBridge
-// require('react-native/Libraries/Core/InitializeCore');
+require('react-native/Libraries/Core/InitializeCore');
 
 jest.mock('react-native-gesture-handler', () => {
   const View = require('react-native/Libraries/Components/View/View');

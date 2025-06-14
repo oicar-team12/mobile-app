@@ -11,10 +11,7 @@ ShiftSync brings all your scheduling and group coordination into one simple, int
 Our app comes packed with features to make your life easier:
 
 *   **👤 User Authentication:** Securely log in and register to access your personalized information.
-*   ** प्रोफाइल (Profile Management):** View and manage your user profile details.
-*   **📅 Scheduling:** Easily view and manage your upcoming schedules. (Perhaps mention if users can add/edit/delete events).
-*   **🔄 Shift Management:** Keep track of your work shifts or other time-based commitments. (Mention any specific functionalities like swapping shifts, requesting time off, if applicable).
-*   **👥 Group Interaction:** Connect with your groups, view group-specific information or schedules. (Elaborate on what users can do within groups).
+*   **📅 Scheduling:** Easily view and manage your upcoming schedules.
 *   **[Add any other key features here!]**
 
 ## 🚀 Getting Started
@@ -57,4 +54,3 @@ To get a local copy up and running for development and testing purposes, follow 
 *   [React Navigation](https://reactnavigation.org/) - For handling routing and navigation.
 *   [Axios](https://axios-http.com/) - For making API requests.
 *   **[Mention any other major libraries or technologies you've used]**
-
