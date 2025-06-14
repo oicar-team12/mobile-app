@@ -12,7 +12,6 @@ Our app comes packed with features to make your life easier:
 
 *   **👤 User Authentication:** Securely log in and register to access your personalized information.
 *   **📅 Scheduling:** Easily view and manage your upcoming schedules.
-*   **[Add any other key features here!]**
 
 ## 🚀 Getting Started
 
