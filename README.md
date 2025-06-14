@@ -1,10 +1,10 @@
-# Mobile App Title (Replace This!)
+# ShiftSync
 
-Welcome to **[Your App Name Here]**! This mobile application helps you [**describe the main goal of your app in one sentence - e.g., manage your work shifts effortlessly, connect with your community groups, etc.**].
+Welcome to **ShiftSync**! This mobile application helps you manage your work shifts effortlessly, connect with your community groups, etc.
 
 ## 👋 About The App
 
-[**Expand a bit here. What problem does your app solve? What makes it useful or unique? For example: "Tired of juggling multiple schedules or missing important updates from your groups? [Your App Name] brings all your scheduling and group coordination into one simple, intuitive interface. Whether you're managing personal appointments, work shifts, or team activities, we've got you covered."**]
+ShiftSync brings all your scheduling and group coordination into one simple, intuitive interface. Whether you're managing personal appointments, work shifts, or team activities, we've got you covered.
 
 ## ✨ Features
 
@@ -31,11 +31,11 @@ To get a local copy up and running for development and testing purposes, follow 
 
 1.  **Clone the repo:**
     ```sh
-    git clone [https://github.com/your-username/your-repo-name.git](https://github.com/your-username/your-repo-name.git)
+    git clone https://github.com/oicar-team12/mobile-app.git
     ```
 2.  **Navigate to the mobile app directory:**
     ```sh
-    cd your-repo-name/mobile/mobile
+    cd mobile-app/mobile/mobile
     ```
 3.  **Install NPM packages:**
     ```sh
@@ -58,29 +58,3 @@ To get a local copy up and running for development and testing purposes, follow 
 *   [Axios](https://axios-http.com/) - For making API requests.
 *   **[Mention any other major libraries or technologies you've used]**
 
-## 🤝 Contributing
-
-Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
-
-If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
-Don't forget to give the project a star! Thanks again!
-
-1.  Fork the Project
-2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4.  Push to the Branch (`git push origin feature/AmazingFeature`)
-5.  Open a Pull Request
-
-## 📄 License
-
-Distributed under the [**Choose a License - e.g., MIT**] License. See `LICENSE.txt` for more information. (You'll need to add a LICENSE.txt file if you choose one).
-
-## 📧 Contact
-
-Your Name / Project Link - [your-email@example.com](mailto:your-email@example.com)
-
-Project Link: [https://github.com/your-username/your-repo-name](https://github.com/your-username/your-repo-name)
-
----
-
-**Remember to replace the bracketed placeholders `[...]` with your app's specific details!**
